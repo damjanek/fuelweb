@@ -1,6 +1,8 @@
 import os
 import sys
 import web
+from signal import signal, SIGTERM
+import atexit
 from web.httpserver import server, WSGIServer, StaticMiddleware
 
 curdir = os.path.dirname(__file__)
@@ -68,6 +70,16 @@ def appstart(keepalive=False):
     plugin_processor = PluginProcessor()
     logger.info("Running plugin process...")
     plugin_processor.start()
+
+    def cleanup():
+        """
+        kill child process on exit
+        """
+        plugin_processor.terminate()
+
+    # make sure our atexit handler are called even on signals
+    signal(SIGTERM, lambda signum, stack_frame: exit(1))
+    atexit.register(cleanup)
 
     if keepalive:
         logger.info("Running KeepAlive watcher...")
